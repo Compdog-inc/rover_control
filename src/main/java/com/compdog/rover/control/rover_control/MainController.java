@@ -33,6 +33,9 @@ public class MainController {
     @FXML
     private Label connection;
 
+    @FXML
+    private Label quality;
+
     private Client client;
 
     private final StopWatch lastTransaction = StopWatch.createStarted();
@@ -89,11 +92,14 @@ public class MainController {
             Platform.runLater(() -> coreTemp.setText(Math.round(coreTemp1 * 100.0) / 100.0 + " C"));
         });
 
-        client.addConnectionUpdateListener(() -> {
-            Platform.runLater(() -> {
+        client.addConnectionUpdateListener((status, avg, gap) -> Platform.runLater(() -> {
+            if (status) {
                 connection.setText(client.IsConnected() ? "Connected" : "Not Connected");
                 connection.setTextFill(client.IsConnected() ? connectedPaint : notConnectedPaint);
-            });
-        });
+            } else {
+                long qualityValue = 50 * 10 / (avg * gap);
+                quality.setText("Quality: " + qualityValue);
+            }
+        }));
     }
 }

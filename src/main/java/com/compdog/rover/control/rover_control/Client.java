@@ -23,7 +23,7 @@ public class Client {
     }
 
     public interface ConnectionUpdatedListener extends EventListener {
-        void updated();
+        void updated(boolean statusChanged, long avg, long gap);
     }
 
     private final List<UpdatedListener> updated = new ArrayList<>();
@@ -45,7 +45,13 @@ public class Client {
 
     private void dispatchConnectionUpdatedEvent(){
         for(ConnectionUpdatedListener listener : connectionUpdated){
-            listener.updated();
+            listener.updated(true ,0 ,0);
+        }
+    }
+
+    private void dispatchConnectionUpdatedEvent(long avg, long gap){
+        for(ConnectionUpdatedListener listener : connectionUpdated){
+            listener.updated(false, avg, gap);
         }
     }
 
@@ -239,10 +245,9 @@ public class Client {
                 } else {
                     long interval = sw.getTime(TimeUnit.MILLISECONDS);
                     buffer.push(interval);
-
                     long avg = buffer.getAverage();
                     long gap = buffer.getGap();
-                    System.out.println("[Client] Timeout interval: "+avg+" / "+gap);
+                    dispatchConnectionUpdatedEvent(avg, gap);
                 }
             }
         }

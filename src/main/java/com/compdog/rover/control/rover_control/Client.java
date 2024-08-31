@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.compdog.rover.control.rover_control.util.ManualResetEvent;
+import com.compdog.rover.control.rover_control.util.RollingBuffer;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.Nullable;
 import org.json.*;
@@ -203,6 +204,7 @@ public class Client {
     private void clientTimeoutThread() {
         boolean received;
         StopWatch sw = StopWatch.create();
+        RollingBuffer buffer = new RollingBuffer(5);
 
         while (!disposed) {
             sw.reset();
@@ -222,9 +224,9 @@ public class Client {
             }
 
             if (connected && running) {
-                if(!received){
+                if (!received) {
                     System.out.println("[Client] Reached client timeout. Disconnecting");
-                    if(socket != null) {
+                    if (socket != null) {
                         try {
                             socket.close();
                         } catch (IOException e) {
@@ -236,7 +238,11 @@ public class Client {
                     }
                 } else {
                     long interval = sw.getTime(TimeUnit.MILLISECONDS);
-                    System.out.println("[Client] Timeout interval: " + interval);
+                    buffer.push(interval);
+
+                    long avg = buffer.getAverage();
+                    long gap = buffer.getGap();
+                    System.out.println("[Client] Timeout interval: "+avg+" / "+gap);
                 }
             }
         }

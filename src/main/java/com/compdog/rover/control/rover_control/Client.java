@@ -210,7 +210,7 @@ public class Client {
     private void clientTimeoutThread() {
         boolean received;
         StopWatch sw = StopWatch.create();
-        RollingBuffer buffer = new RollingBuffer(5);
+        RollingBuffer buffer = new RollingBuffer(20);
 
         while (!disposed) {
             sw.reset();

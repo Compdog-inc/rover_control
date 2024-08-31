@@ -1,5 +1,6 @@
 package com.compdog.rover.control.rover_control;
 
+import com.compdog.rover.control.rover_control.util.CurveUtils;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -97,7 +98,12 @@ public class MainController {
                 connection.setText(client.IsConnected() ? "Connected" : "Not Connected");
                 connection.setTextFill(client.IsConnected() ? connectedPaint : notConnectedPaint);
             } else {
-                double qualityValue = 200.0  / ((double)avg+1) + 100.0 / ((double)gap + 1);
+                /* Consists of two parts, latency (50%) and consistency (50%) */
+                double qualityValue =
+                        /* average interval of 100 is good (50% quality) */
+                        CurveUtils.InverseCurve(avg, 100, 50, 1.2) +
+                        /* gap of 1 is good consistency (50% quality) */
+                        CurveUtils.InverseCurve(gap, 1, 50, 0.2);
                 quality.setText("Quality: " + Math.round(qualityValue));
             }
         }));

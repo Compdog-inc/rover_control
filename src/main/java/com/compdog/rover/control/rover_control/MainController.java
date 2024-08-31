@@ -30,7 +30,7 @@ public class MainController {
 
     private Client client;
 
-    private StopWatch lastTransaction = StopWatch.createStarted();
+    private final StopWatch lastTransaction = StopWatch.createStarted();
     private Timer heartbeatTimer;
 
     @FXML

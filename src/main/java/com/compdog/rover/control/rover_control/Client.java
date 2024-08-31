@@ -3,11 +3,15 @@ package com.compdog.rover.control.rover_control;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
 
+import com.compdog.rover.control.rover_control.util.ManualResetEvent;
+import org.jetbrains.annotations.Nullable;
 import org.json.*;
 
 public class Client {
@@ -15,7 +19,12 @@ public class Client {
         void updated(double m0,double m1,double m2, double m3, double m4, double m5, double coreTemp);
     }
 
+    public interface ConnectionUpdatedListener extends EventListener {
+        void updated();
+    }
+
     private final List<UpdatedListener> updated = new ArrayList<>();
+    private final List<ConnectionUpdatedListener> connectionUpdated = new ArrayList<>();
 
     public void addUpdateListener(UpdatedListener listener){
         updated.add(listener);
@@ -27,30 +36,142 @@ public class Client {
         }
     }
 
-    private Socket socket;
-    private OutputStreamWriter writer;
+    public void addConnectionUpdateListener(ConnectionUpdatedListener listener){
+        connectionUpdated.add(listener);
+    }
 
-    public void Connect(){
-        try {
-            socket = new Socket("10.67.31.2", 5001);
-            System.out.println("Connected on remote port " + socket.getPort() + " from " + socket.getLocalPort());
-
-            writer = new OutputStreamWriter(socket.getOutputStream());
-
-            Thread readThread = new Thread(this::ReadThread, "readThread");
-            readThread.setDaemon(true);
-            readThread.start();
-        } catch (IOException e) {
-            e.printStackTrace();
+    private void dispatchConnectionUpdatedEvent(){
+        for(ConnectionUpdatedListener listener : connectionUpdated){
+            listener.updated();
         }
     }
 
-    public void Disconnect(){
-        try {
-            socket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+    private @Nullable Socket socket;
+    private @Nullable OutputStreamWriter writer;
+    private boolean connected;
+    private boolean running;
+    private boolean disposed = false;
+    private final ManualResetEvent startEvent;
+
+    private final String host;
+    private final int port;
+
+    private @Nullable Thread socketThread;
+
+    public Client(String host, int port){
+        socket = null;
+        writer = null;
+        connected = false;
+        running = false;
+
+        socketThread = null;
+
+        this.host = host;
+        this.port = port;
+
+        startEvent = new ManualResetEvent(false);
+    }
+
+    public void Start() {
+        running = true;
+        startEvent.set();
+
+        if (socketThread == null) {
+            socketThread = new Thread(this::clientSocketThread, "Client Socket Thread");
+            socketThread.setDaemon(true);
+            socketThread.start();
         }
+    }
+
+    public void Stop(){
+        running = false;
+    }
+
+    public void Dispose() {
+        disposed = true;
+        Stop();
+        startEvent.set();
+        if (socketThread != null) {
+            try {
+                socketThread.join(10000);
+            } catch (InterruptedException ignored) {
+                socketThread.interrupt();
+            }
+        }
+    }
+
+    private void clientSocketThread() {
+        while (!disposed) {
+            connected = false;
+            dispatchConnectionUpdatedEvent();
+
+            try {
+                startEvent.waitOne();
+            } catch (InterruptedException e) {
+                System.out.println("[Client] Client socket thread interrupted!");
+                break;
+            }
+
+            if(disposed)
+                break;
+
+            startEvent.reset();
+            while (running) {
+                try {
+                    connected = false;
+                    dispatchConnectionUpdatedEvent();
+
+                    socket = new Socket();
+                    System.out.println("[Client] Trying to connect");
+
+                    socket.connect(new InetSocketAddress(host, port), 5000);
+
+                    connected = true;
+                    System.out.println("[Client] Connected on remote port " + socket.getPort() + " from " + socket.getLocalPort());
+                    dispatchConnectionUpdatedEvent();
+
+                    writer = new OutputStreamWriter(socket.getOutputStream());
+                    InputStreamReader reader = new InputStreamReader(socket.getInputStream());
+
+                    char[] buffer = new char[1024];
+                    while (!socket.isClosed() && running) {
+                        int length = reader.read(buffer);
+                        if (length == -1)
+                            return;
+                        for (int i = 0; i < length; i++) {
+                            if (buffer[i] == '}') {
+                                jsonBuffer.append(buffer[i]);
+                                processJsonStr(jsonBuffer.toString());
+                                jsonBuffer.setLength(0);
+                                jsonBuffer.trimToSize();
+                            } else {
+                                jsonBuffer.append(buffer[i]);
+                            }
+                        }
+                    }
+
+                    socket.close();
+                    connected = false;
+                    System.out.println("[Client] Disconnected from server");
+                    dispatchConnectionUpdatedEvent();
+                }
+                catch (SocketTimeoutException timeout){
+                    System.out.println("[Client] Connection timed out!");
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                System.out.println("[Client] Lost connection with server");
+
+                Thread.yield();
+            }
+        }
+
+        connected = false;
+        dispatchConnectionUpdatedEvent();
+
+        System.out.println("[Client] Client socket thread dying");
     }
 
     private void processJsonStr(String str){
@@ -71,31 +192,10 @@ public class Client {
 
     private final StringBuilder jsonBuffer = new StringBuilder();
 
-    private void ReadThread() {
-        try {
-            InputStreamReader reader = new InputStreamReader(socket.getInputStream());
-            char[] buffer = new char[1024];
-            while (!socket.isClosed()) {
-                int length = reader.read(buffer);
-                if (length == -1)
-                    return;
-                for (int i = 0; i < length; i++) {
-                    if (buffer[i] == '}') {
-                        jsonBuffer.append(buffer[i]);
-                        processJsonStr(jsonBuffer.toString());
-                        jsonBuffer.setLength(0);
-                        jsonBuffer.trimToSize();
-                    } else {
-                        jsonBuffer.append(buffer[i]);
-                    }
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public void SendUpdate(double left, double right) {
+        if(writer == null)
+            return;
+
         try {
             JSONObject json = new JSONObject();
 
@@ -113,5 +213,9 @@ public class Client {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public boolean IsConnected(){
+        return connected;
     }
 }

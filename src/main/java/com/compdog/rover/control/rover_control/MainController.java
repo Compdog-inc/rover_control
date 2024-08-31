@@ -3,6 +3,8 @@ package com.compdog.rover.control.rover_control;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import org.apache.commons.lang3.time.StopWatch;
 
 import java.util.Timer;
@@ -28,10 +30,16 @@ public class MainController {
     @FXML
     private Label coreTemp;
 
+    @FXML
+    private Label connection;
+
     private Client client;
 
     private final StopWatch lastTransaction = StopWatch.createStarted();
     private Timer heartbeatTimer;
+
+    private Paint notConnectedPaint;
+    private Paint connectedPaint;
 
     @FXML
     public void initialize() {
@@ -45,6 +53,9 @@ public class MainController {
                     }
                 }
         );
+
+        notConnectedPaint = Color.RED;
+        connectedPaint = Color.BLACK;
 
         heartbeatTimer = new Timer();
         heartbeatTimer.scheduleAtFixedRate(new TimerTask() {
@@ -61,7 +72,11 @@ public class MainController {
         }, 100, 100);
     }
 
-    public void setClient(Client client){
+    public void deinitialize() {
+        heartbeatTimer.cancel();
+    }
+
+    public void setClient(Client client) {
         this.client = client;
         client.addUpdateListener((m01, m11, m21, m31, m41, m51, coreTemp1) -> {
             m0.setValue(m01);
@@ -74,6 +89,11 @@ public class MainController {
             Platform.runLater(() -> {
                 coreTemp.setText(Math.round(coreTemp1 * 100.0) / 100.0 + " C");
             });
+        });
+
+        client.addConnectionUpdateListener(() -> {
+            connection.setText(client.IsConnected() ? "Connected" : "Not Connected");
+            connection.setTextFill(client.IsConnected() ? connectedPaint : notConnectedPaint);
         });
     }
 }

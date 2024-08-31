@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import com.compdog.rover.control.rover_control.Joystick?>
+<?import com.compdog.rover.control.rover_control.MotorPanel?>
+
+
+<HBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="268.6666666666667" prefWidth="561.3333333333334" spacing="20.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.compdog.rover.control.rover_control.MainController">
+   <children>
+      <Joystick fx:id="joystick" prefHeight="269.0" prefWidth="254.66666666666666" style="-fx-background-color: black;" />
+      <TitledPane animated="false" collapsible="false" prefHeight="288.0" prefWidth="263.3333333333333" text="Motor Overview" HBox.hgrow="NEVER">
+        <content>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+               <children>
+                  <MotorPanel fx:id="m0" layoutX="42.0" layoutY="23.0" prefHeight="37.0" prefWidth="73.0" style="-fx-background-color: black;" />
+                  <Label layoutX="24.0" layoutY="33.0" text="0" />
+                  <MotorPanel fx:id="m2" layoutX="42.0" layoutY="89.0" prefHeight="37.0" prefWidth="73.0" style="-fx-background-color: black;" />
+                  <Label layoutX="24.0" layoutY="99.0" text="2" />
+                  <MotorPanel fx:id="m4" layoutX="42.0" layoutY="154.0" prefHeight="37.0" prefWidth="73.0" style="-fx-background-color: black;" />
+                  <Label layoutX="24.0" layoutY="164.0" text="4" />
+                  <MotorPanel fx:id="m1" layoutX="149.0" layoutY="24.0" prefHeight="37.0" prefWidth="73.0" style="-fx-background-color: black;" />
+                  <Label layoutX="233.0" layoutY="34.0" text="1" />
+                  <MotorPanel fx:id="m3" layoutX="149.0" layoutY="90.0" prefHeight="37.0" prefWidth="73.0" style="-fx-background-color: black;" />
+                  <Label layoutX="233.0" layoutY="100.0" text="3" />
+                  <MotorPanel fx:id="m5" layoutX="149.0" layoutY="155.0" prefHeight="37.0" prefWidth="73.0" style="-fx-background-color: black;" />
+                  <Label layoutX="233.0" layoutY="165.0" text="5" />
+                   <Label fx:id="coreTemp" layoutX="62.0" layoutY="220"  prefHeight="37.0" prefWidth="73.0"/>
+                   <Label layoutX="24.0" layoutY="230" text="Core" />
+               </children>
+            </AnchorPane>
+        </content>
+      </TitledPane>
+   </children>
+   <padding>
+      <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
+   </padding>
+</HBox>

@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="MainApplication" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.compdog.rover.control.rover_control.MainApplication" />
+    <module name="rover_control" />
+    <option name="WORKING_DIRECTORY" value="$ContentRoot$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

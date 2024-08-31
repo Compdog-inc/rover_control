@@ -90,8 +90,10 @@ public class MainController {
         });
 
         client.addConnectionUpdateListener(() -> {
-            connection.setText(client.IsConnected() ? "Connected" : "Not Connected");
-            connection.setTextFill(client.IsConnected() ? connectedPaint : notConnectedPaint);
+            Platform.runLater(() -> {
+                connection.setText(client.IsConnected() ? "Connected" : "Not Connected");
+                connection.setTextFill(client.IsConnected() ? connectedPaint : notConnectedPaint);
+            });
         });
     }
 }

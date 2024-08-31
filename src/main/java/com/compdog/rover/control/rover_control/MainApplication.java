@@ -3,7 +3,6 @@ package com.compdog.rover.control.rover_control;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.stage.Screen;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.Nullable;
 

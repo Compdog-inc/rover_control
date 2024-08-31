@@ -6,7 +6,7 @@ package com.compdog.rover.control.rover_control.util;
 
 public  class ManualResetEvent {
     private final Object monitor = new Object();
-    private volatile boolean open = false;
+    private volatile boolean open;
 
     public ManualResetEvent(boolean open) {
         this.open = open;

@@ -2,8 +2,8 @@ package com.compdog.rover.control.rover_control;
 
 public class Drivetrain {
     public static class DrivetrainResult {
-        double left;
-        double right;
+        final double left;
+        final double right;
 
         public double getLeft() {
             return left;
@@ -19,7 +19,7 @@ public class Drivetrain {
         }
     }
 
-    public static DrivetrainResult Drive(double x, double y) {
-        return new DrivetrainResult(x, y);
+    public static DrivetrainResult Drive(double left, double right) {
+        return new DrivetrainResult(left, right);
     }
 }

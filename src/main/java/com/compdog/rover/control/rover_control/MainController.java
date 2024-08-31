@@ -86,9 +86,7 @@ public class MainController {
             m4.setValue(m41);
             m5.setValue(m51);
 
-            Platform.runLater(() -> {
-                coreTemp.setText(Math.round(coreTemp1 * 100.0) / 100.0 + " C");
-            });
+            Platform.runLater(() -> coreTemp.setText(Math.round(coreTemp1 * 100.0) / 100.0 + " C"));
         });
 
         client.addConnectionUpdateListener(() -> {

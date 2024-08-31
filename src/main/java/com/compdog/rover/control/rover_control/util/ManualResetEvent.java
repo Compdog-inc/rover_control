@@ -20,6 +20,16 @@ public  class ManualResetEvent {
         }
     }
 
+    public boolean waitOne(long timeout) throws InterruptedException {
+        synchronized (monitor) {
+            if (!open) {
+                monitor.wait(timeout);
+            }
+
+            return open;
+        }
+    }
+
     public void set() {//open start
         synchronized (monitor) {
             open = true;

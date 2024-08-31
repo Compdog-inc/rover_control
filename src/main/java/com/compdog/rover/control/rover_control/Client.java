@@ -9,8 +9,10 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.compdog.rover.control.rover_control.util.ManualResetEvent;
+import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.Nullable;
 import org.json.*;
 
@@ -52,11 +54,13 @@ public class Client {
     private boolean running;
     private boolean disposed = false;
     private final ManualResetEvent startEvent;
+    private final ManualResetEvent receiveEvent;
 
     private final String host;
     private final int port;
 
     private @Nullable Thread socketThread;
+    private @Nullable Thread timeoutThread;
 
     public Client(String host, int port){
         socket = null;
@@ -70,6 +74,7 @@ public class Client {
         this.port = port;
 
         startEvent = new ManualResetEvent(false);
+        receiveEvent = new ManualResetEvent(false);
     }
 
     public void Start() {
@@ -81,6 +86,12 @@ public class Client {
             socketThread.setDaemon(true);
             socketThread.start();
         }
+
+        if (timeoutThread == null) {
+            timeoutThread = new Thread(this::clientTimeoutThread, "Client Timeout Thread");
+            timeoutThread.setDaemon(true);
+            timeoutThread.start();
+        }
     }
 
     public void Stop(){
@@ -91,11 +102,19 @@ public class Client {
         disposed = true;
         Stop();
         startEvent.set();
+        receiveEvent.set();
         if (socketThread != null) {
             try {
                 socketThread.join(10000);
             } catch (InterruptedException ignored) {
                 socketThread.interrupt();
+            }
+        }
+        if (timeoutThread != null) {
+            try {
+                timeoutThread.join(10000);
+            } catch (InterruptedException ignored) {
+                timeoutThread.interrupt();
             }
         }
     }
@@ -137,7 +156,8 @@ public class Client {
                     while (!socket.isClosed() && running) {
                         int length = reader.read(buffer);
                         if (length == -1)
-                            return;
+                            break;
+
                         for (int i = 0; i < length; i++) {
                             if (buffer[i] == '}') {
                                 jsonBuffer.append(buffer[i]);
@@ -172,6 +192,36 @@ public class Client {
         dispatchConnectionUpdatedEvent();
 
         System.out.println("[Client] Client socket thread dying");
+    }
+
+    private void clientTimeoutThread() {
+        boolean received;
+        StopWatch sw = StopWatch.create();
+
+        while (!disposed) {
+            sw.reset();
+            sw.start();
+            try {
+                received = receiveEvent.waitOne(1000);
+            } catch (InterruptedException e) {
+                System.out.println("[Client] Client timeout thread interrupted!");
+                break;
+            }
+
+            if (disposed)
+                break;
+
+            if (received) {
+                receiveEvent.reset();
+            }
+
+            if (connected && running) {
+                long interval = sw.getTime(TimeUnit.MILLISECONDS);
+                System.out.println("[Client] Timeout interval: " + interval);
+            }
+        }
+
+        System.out.println("[Client] Client timeout thread dying");
     }
 
     private void processJsonStr(String str){

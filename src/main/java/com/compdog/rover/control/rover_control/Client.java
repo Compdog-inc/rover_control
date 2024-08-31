@@ -158,6 +158,8 @@ public class Client {
                         if (length == -1)
                             break;
 
+                        receiveEvent.set();
+
                         for (int i = 0; i < length; i++) {
                             if (buffer[i] == '}') {
                                 jsonBuffer.append(buffer[i]);
@@ -184,7 +186,11 @@ public class Client {
 
                 System.out.println("[Client] Lost connection with server");
 
-                Thread.yield();
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.yield();
+                }
             }
         }
 
@@ -202,7 +208,7 @@ public class Client {
             sw.reset();
             sw.start();
             try {
-                received = receiveEvent.waitOne(1000);
+                received = receiveEvent.waitOne(5000);
             } catch (InterruptedException e) {
                 System.out.println("[Client] Client timeout thread interrupted!");
                 break;
@@ -216,8 +222,22 @@ public class Client {
             }
 
             if (connected && running) {
-                long interval = sw.getTime(TimeUnit.MILLISECONDS);
-                System.out.println("[Client] Timeout interval: " + interval);
+                if(!received){
+                    System.out.println("[Client] Reached client timeout. Disconnecting");
+                    if(socket != null) {
+                        try {
+                            socket.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            Stop();
+                        }
+                    } else {
+                        Stop();
+                    }
+                } else {
+                    long interval = sw.getTime(TimeUnit.MILLISECONDS);
+                    System.out.println("[Client] Timeout interval: " + interval);
+                }
             }
         }
 
@@ -243,7 +263,7 @@ public class Client {
     private final StringBuilder jsonBuffer = new StringBuilder();
 
     public void SendUpdate(double left, double right) {
-        if(writer == null)
+        if(writer == null || !connected)
             return;
 
         try {

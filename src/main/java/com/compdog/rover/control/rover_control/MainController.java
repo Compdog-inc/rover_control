@@ -97,8 +97,8 @@ public class MainController {
                 connection.setText(client.IsConnected() ? "Connected" : "Not Connected");
                 connection.setTextFill(client.IsConnected() ? connectedPaint : notConnectedPaint);
             } else {
-                long qualityValue = 50 * 10 / (avg * gap);
-                quality.setText("Quality: " + qualityValue);
+                double qualityValue = 200.0  / ((double)avg+1) + 100.0 / ((double)gap + 1);
+                quality.setText("Quality: " + Math.round(qualityValue));
             }
         }));
     }

@@ -9,6 +9,7 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 import com.compdog.rover.control.rover_control.util.ManualResetEvent;
@@ -157,28 +158,17 @@ public class Client {
                     dispatchConnectionUpdatedEvent();
 
                     writer = new OutputStreamWriter(socket.getOutputStream());
-                    InputStreamReader reader = new InputStreamReader(socket.getInputStream());
+                    Scanner reader = new Scanner(socket.getInputStream());
 
-                    char[] buffer = new char[1024];
                     while (!socket.isClosed() && running) {
-                        int length = reader.read(buffer);
-                        if (length == -1)
-                            break;
+                        String line = reader.nextLine();
 
                         receiveEvent.set();
 
-                        for (int i = 0; i < length; i++) {
-                            if (buffer[i] == '}') {
-                                jsonBuffer.append(buffer[i]);
-                                processJsonStr(jsonBuffer.toString());
-                                jsonBuffer.setLength(0);
-                                jsonBuffer.trimToSize();
-                            } else {
-                                jsonBuffer.append(buffer[i]);
-                            }
-                        }
+                        System.out.println("Recieved  line: " + line);
                     }
 
+                    reader.close();
                     socket.close();
                     connected = false;
                     System.out.println("[Client] Disconnected from server");
@@ -255,42 +245,12 @@ public class Client {
         System.out.println("[Client] Client timeout thread dying");
     }
 
-    private void processJsonStr(String str){
-        try {
-            JSONObject json = new JSONObject(str);
-            double m0 = json.getDouble("motor0");
-            double m1 = json.getDouble("motor1");
-            double m2 = json.getDouble("motor2");
-            double m3 = json.getDouble("motor3");
-            double m4 = json.getDouble("motor4");
-            double m5 = json.getDouble("motor5");
-            double coreTemp = json.getDouble("temp");
-            dispatchUpdatedEvent(m0, m1, m2, m3, m4, m5, coreTemp);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private final StringBuilder jsonBuffer = new StringBuilder();
-
     public void SendUpdate(double left, double right) {
         if(writer == null || !connected)
             return;
 
         try {
-            JSONObject json = new JSONObject();
-
-            left = Math.max(-1, Math.min(1, left));
-            right = Math.max(-1, Math.min(1, right));
-
-            left = Math.floor(left * 100.0) / 100.0;
-            right = Math.floor(right * 100.0) / 100.0;
-
-            json.put("left", left);
-            json.put("right", right);
-
-            writer.write(json.toString(0));
-            writer.flush();
+            writer.write(String.format("DRIVE:%f|%f\n", left, right));
         } catch (IOException e) {
             e.printStackTrace();
         }

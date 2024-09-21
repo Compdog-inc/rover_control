@@ -1,7 +1,6 @@
 package com.compdog.rover.control.rover_control;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -16,7 +15,6 @@ import com.compdog.rover.control.rover_control.util.ManualResetEvent;
 import com.compdog.rover.control.rover_control.util.RollingBuffer;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.Nullable;
-import org.json.*;
 
 public class Client {
     public interface UpdatedListener extends EventListener {

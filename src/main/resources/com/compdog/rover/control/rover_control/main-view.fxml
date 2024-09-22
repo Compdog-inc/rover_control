@@ -9,11 +9,11 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<HBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="369.0" prefWidth="650.0" spacing="20.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.compdog.rover.control.rover_control.MainController">
+<HBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="379.0" prefWidth="650.0" spacing="20.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.compdog.rover.control.rover_control.MainController">
     <padding>
         <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
     </padding>
-    <Joystick fx:id="joystick" prefHeight="345.0" prefWidth="345.0" style="-fx-background-color: black;" HBox.hgrow="NEVER" />
+    <Joystick fx:id="joystick" prefHeight="385.0" prefWidth="385.0" style="-fx-background-color: black;" HBox.hgrow="NEVER" />
     <VBox prefHeight="200.0" prefWidth="263.3333333333333" spacing="10.0" HBox.hgrow="NEVER">
         <TitledPane animated="false" collapsible="false" prefHeight="288.0" prefWidth="263.3333333333333" text="Motor Overview">
             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
@@ -31,8 +31,8 @@
                 <Label layoutX="233.0" layoutY="165.0" text="5" />
                 <Label fx:id="coreTemp" layoutX="62.0" layoutY="200.0" prefHeight="37.0" prefWidth="73.0" text="---- C" />
                 <Label layoutX="24.0" layoutY="210.0" text="Core" />
-                <Label fx:id="memStatus" layoutX="72.0" layoutY="245.0" prefHeight="37.0" prefWidth="73.0" text="---- kB / ---- kB (--%)" />
-                <Label layoutX="24.0" layoutY="255.0" text="Memory" />
+                <Label fx:id="memStatus" layoutX="82.0" layoutY="225.0" prefHeight="37.0" prefWidth="173.0" text="---- kB / ---- kB (--%)" />
+                <Label layoutX="24.0" layoutY="235.0" text="Memory" />
             </AnchorPane>
         </TitledPane>
         <TitledPane animated="false" collapsible="false" prefHeight="91.0" prefWidth="263.0" text="Connection" VBox.vgrow="NEVER">

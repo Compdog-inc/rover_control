@@ -1,5 +1,9 @@
 package com.compdog.rover.control.rover_control;
 
+import com.compdog.rover.control.rover_control.packet.DrivetrainPacket;
+import com.compdog.rover.control.rover_control.packet.HealthPacket;
+import com.compdog.rover.control.rover_control.packet.ManualDrivePacket;
+import com.compdog.rover.control.rover_control.packet.WhiskersPacket;
 import com.compdog.rover.control.rover_control.util.CurveUtils;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -32,6 +36,9 @@ public class MainController {
     private Label coreTemp;
 
     @FXML
+    private Label memStatus;
+
+    @FXML
     private Label connection;
 
     @FXML
@@ -39,7 +46,8 @@ public class MainController {
 
     private Client client;
 
-    private final StopWatch lastTransaction = StopWatch.createStarted();
+    private final StopWatch lastDrive = StopWatch.createStarted();
+    private final StopWatch lastHealth = StopWatch.createStarted();
     private Timer heartbeatTimer;
 
     private Paint notConnectedPaint;
@@ -49,11 +57,9 @@ public class MainController {
     public void initialize() {
         joystick.addUpdateListener(isOneShot -> {
                     if (client == null) return;
-                    if (lastTransaction.getTime(TimeUnit.MILLISECONDS) > 100 || isOneShot) {
+                    if (isOneShot) {
                         Drivetrain.DrivetrainResult drive = Drivetrain.Drive(joystick.getX(), joystick.getY());
-                        client.SendUpdate(drive.left, drive.right);
-                        lastTransaction.reset();
-                        lastTransaction.start();
+                        client.SendPacket(new ManualDrivePacket(drive.left, drive.right));
                     }
                 }
         );
@@ -66,14 +72,20 @@ public class MainController {
             @Override
             public void run() {
                 if (client == null) return;
-                if (lastTransaction.getTime(TimeUnit.MILLISECONDS) > 1000) {
+                if (lastHealth.getTime(TimeUnit.MILLISECONDS) > 500) {
+                    client.RequestHealth();
+                    lastHealth.reset();
+                    lastHealth.start();
+                }
+
+                if (lastDrive.getTime(TimeUnit.MILLISECONDS) > 50) {
                     Drivetrain.DrivetrainResult drive = Drivetrain.Drive(joystick.getX(), joystick.getY());
-                    client.SendUpdate(drive.left, drive.right);
-                    lastTransaction.reset();
-                    lastTransaction.start();
+                    client.SendPacket(new ManualDrivePacket(drive.left, drive.right));
+                    lastDrive.reset();
+                    lastDrive.start();
                 }
             }
-        }, 100, 100);
+        }, 100, 10);
     }
 
     public void deinitialize() {
@@ -82,15 +94,29 @@ public class MainController {
 
     public void setClient(Client client) {
         this.client = client;
-        client.addUpdateListener((m01, m11, m21, m31, m41, m51, coreTemp1) -> {
-            m0.setValue(m01);
-            m1.setValue(m11);
-            m2.setValue(m21);
-            m3.setValue(m31);
-            m4.setValue(m41);
-            m5.setValue(m51);
+        client.addUpdateListener(new Client.UpdatedListener() {
+            @Override
+            public void updated(DrivetrainPacket packet) {
+                m0.setValue(packet.motor0);
+                m1.setValue(packet.motor1);
+                m2.setValue(packet.motor2);
+                m3.setValue(packet.motor3);
+                m4.setValue(packet.motor4);
+                m5.setValue(packet.motor5);
+            }
 
-            Platform.runLater(() -> coreTemp.setText(Math.round(coreTemp1 * 100.0) / 100.0 + " C"));
+            @Override
+            public void updated(HealthPacket packet) {
+                Platform.runLater(() -> {
+                    coreTemp.setText(Math.round(packet.temp * 100.0) / 100.0 + " C");
+                    memStatus.setText(String.format("%.2f kB / %.2f kB (%d%%)", packet.memoryUsed / 1024.0, packet.memoryTotal / 1024.0, (packet.memoryUsed * 100 / packet.memoryTotal)));
+                });
+            }
+
+            @Override
+            public void updated(WhiskersPacket packet) {
+
+            }
         });
 
         client.addConnectionUpdateListener((status, avg, gap) -> Platform.runLater(() -> {

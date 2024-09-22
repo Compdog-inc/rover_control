@@ -31,6 +31,8 @@
                 <Label layoutX="233.0" layoutY="165.0" text="5" />
                 <Label fx:id="coreTemp" layoutX="62.0" layoutY="200.0" prefHeight="37.0" prefWidth="73.0" text="---- C" />
                 <Label layoutX="24.0" layoutY="210.0" text="Core" />
+                <Label fx:id="memStatus" layoutX="72.0" layoutY="245.0" prefHeight="37.0" prefWidth="73.0" text="---- kB / ---- kB (--%)" />
+                <Label layoutX="24.0" layoutY="255.0" text="Memory" />
             </AnchorPane>
         </TitledPane>
         <TitledPane animated="false" collapsible="false" prefHeight="91.0" prefWidth="263.0" text="Connection" VBox.vgrow="NEVER">

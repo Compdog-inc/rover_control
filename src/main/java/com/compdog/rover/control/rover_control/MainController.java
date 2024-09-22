@@ -59,7 +59,7 @@ public class MainController {
                     if (client == null) return;
                     if (isOneShot) {
                         Drivetrain.DrivetrainResult drive = Drivetrain.Drive(joystick.getX(), joystick.getY());
-                        client.SendPacket(new ManualDrivePacket(drive.left, drive.right));
+                        client.SendPacket(new ManualDrivePacket(drive.left, drive.right), true);
                     }
                 }
         );
@@ -80,7 +80,7 @@ public class MainController {
 
                 if (lastDrive.getTime(TimeUnit.MILLISECONDS) > 50) {
                     Drivetrain.DrivetrainResult drive = Drivetrain.Drive(joystick.getX(), joystick.getY());
-                    client.SendPacket(new ManualDrivePacket(drive.left, drive.right));
+                    client.SendPacket(new ManualDrivePacket(drive.left, drive.right), true);
                     lastDrive.reset();
                     lastDrive.start();
                 }

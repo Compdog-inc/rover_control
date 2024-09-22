@@ -5,10 +5,7 @@ import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.util.ArrayList;
-import java.util.EventListener;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import com.compdog.rover.control.rover_control.packet.*;
@@ -29,6 +26,7 @@ public class Client {
     private static final String COMMAND_REQUEST_HEALTH = "GETHEALTH:";
     private static final String COMMAND_REQUEST_CHARACTERISTICS = "GETCHARS:";
     private static final String COMMAND_MANUAL_DRIVE = "MDRIVE:";
+    private static final String COMMAND_SET_OPTS = "SETOPTS:";
 
     public interface UpdatedListener extends EventListener {
         void updated(DrivetrainPacket packet);
@@ -81,8 +79,10 @@ public class Client {
         }
     }
 
-    private @Nullable Socket socket;
+    private @Nullable Socket socketPrimary;
+    private @Nullable Socket socketDriver;
     private @Nullable OutputStreamWriter writer;
+    private @Nullable OutputStreamWriter driverWriter;
     private boolean connected;
     private boolean running;
     private boolean disposed = false;
@@ -98,8 +98,10 @@ public class Client {
     private @Nullable CharacteristicsPacket characteristics = null;
 
     public Client(String host, int port){
-        socket = null;
+        socketPrimary = null;
+        socketDriver = null;
         writer = null;
+        driverWriter = null;
         connected = false;
         running = false;
 
@@ -175,23 +177,33 @@ public class Client {
                     connected = false;
                     dispatchConnectionUpdatedEvent();
 
-                    socket = new Socket();
+                    socketPrimary = new Socket();
+                    socketDriver = new Socket();
                     System.out.println("[Client] Trying to connect");
 
-                    socket.connect(new InetSocketAddress(host, port), 5000);
+                    socketPrimary.connect(new InetSocketAddress(host, port), 5000);
+                    socketDriver.connect(new InetSocketAddress(host, port), 5000);
 
                     connected = true;
-                    System.out.println("[Client] Connected on remote port " + socket.getPort() + " from " + socket.getLocalPort());
+                    System.out.println("[Client] Connected on remote port " + socketPrimary.getPort() + " from " + socketPrimary.getLocalPort()+"/"+socketDriver.getLocalPort());
                     dispatchConnectionUpdatedEvent();
 
-                    writer = new OutputStreamWriter(socket.getOutputStream());
-                    Scanner reader = new Scanner(socket.getInputStream());
+                    writer = new OutputStreamWriter(socketPrimary.getOutputStream());
+                    driverWriter = new OutputStreamWriter(socketDriver.getOutputStream());
+                    Scanner reader = new Scanner(socketPrimary.getInputStream());
 
                     // Request info about the server we are connected to
                     RequestCharacteristics();
+                    SetOptions(ClientOptionFlags.LISTEN_DRIVETRAIN | ClientOptionFlags.LISTEN_WHISKERS);
 
-                    while (!socket.isClosed() && running) {
-                        String line = reader.nextLine();
+                    while (!socketPrimary.isClosed() && !socketDriver.isClosed() && running) {
+                        String line;
+                        try {
+                            line = reader.nextLine();
+                        } catch (NoSuchElementException e){
+                            break;
+                        }
+
                         receiveEvent.set();
 
                         if (line.startsWith(HEALTH_PACKET)) {
@@ -311,7 +323,8 @@ public class Client {
                     }
 
                     reader.close();
-                    socket.close();
+                    socketPrimary.close();
+                    socketDriver.close();
                     connected = false;
                     System.out.println("[Client] Disconnected from server");
                     dispatchConnectionUpdatedEvent();
@@ -364,9 +377,10 @@ public class Client {
             if (connected && running) {
                 if (!received) {
                     System.out.println("[Client] Reached client timeout. Disconnecting");
-                    if (socket != null) {
+                    if (socketPrimary != null && socketDriver != null) {
                         try {
-                            socket.close();
+                            socketPrimary.close();
+                            socketDriver.close();
                         } catch (IOException e) {
                             e.printStackTrace();
                             Stop();
@@ -387,12 +401,15 @@ public class Client {
         System.out.println("[Client] Client timeout thread dying");
     }
 
-    public void SendPacket(ManualDrivePacket packet) {
-        if(writer == null || !connected)
+    public void SendPacket(ManualDrivePacket packet, boolean useDriver) {
+        OutputStreamWriter _wrt = useDriver ? driverWriter : writer;
+
+        if (_wrt == null || !connected)
             return;
 
         try {
-            writer.write(String.format("%s%f|%f\n", COMMAND_MANUAL_DRIVE, packet.left, packet.right));
+            _wrt.write(String.format("%s%f|%f\n", COMMAND_MANUAL_DRIVE, packet.left, packet.right));
+            _wrt.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -403,7 +420,8 @@ public class Client {
             return;
 
         try {
-            writer.write(COMMAND_REQUEST_HEALTH);
+            writer.write(COMMAND_REQUEST_HEALTH+"\n");
+            writer.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -414,7 +432,20 @@ public class Client {
             return;
 
         try {
-            writer.write(COMMAND_REQUEST_CHARACTERISTICS);
+            writer.write(COMMAND_REQUEST_CHARACTERISTICS+"\n");
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void SetOptions(int options){
+        if(writer == null || !connected)
+            return;
+
+        try {
+            writer.write(COMMAND_SET_OPTS + options+"\n");
+            writer.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }

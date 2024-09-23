@@ -78,7 +78,7 @@ public class MainController {
                     lastHealth.start();
                 }
 
-                if (lastDrive.getTime(TimeUnit.MILLISECONDS) > 50) {
+                if (lastDrive.getTime(TimeUnit.MILLISECONDS) > 100) {
                     Drivetrain.DrivetrainResult drive = Drivetrain.Drive(joystick.getX(), joystick.getY());
                     client.SendPacket(new ManualDrivePacket(drive.left, drive.right), true);
                     lastDrive.reset();

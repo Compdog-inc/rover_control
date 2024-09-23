@@ -333,7 +333,7 @@ public class Client {
                     System.out.println("[Client] Connection timed out!");
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    System.err.println("[Client] Error " + e.getMessage());
                 }
 
                 System.out.println("[Client] Lost connection with server");
